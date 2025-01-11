@@ -1,0 +1,30 @@
+[package]
+  name = "auth-microservice"
+  version = "0.1.0"
+  edition = "2021"
+
+  # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+  name = "auth"
+  path = "src/auth/main.rs"
+
+[[bin]]
+  name = "client"
+  path = "src/client/main.rs"
+
+[[bin]]
+  name = "health-check"
+  path = "src/health/main.rs"
+
+[dependencies]
+  tonic = "0.12"
+  prost = "0.13"
+  tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+  uuid = { version = "1", features = ["v4"] }
+  pbkdf2 = { version = "0.12", features = ["simple"] }
+  rand_core = { version = "0.6", features = ["std"] }
+  clap = { version = "4", features = ["derive"] }
+
+[build-dependencies]
+  tonic-build = "0.12"
