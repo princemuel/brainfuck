@@ -1,6 +1,6 @@
-# Minimum Supported Rust Version (conservative for WASM tooling)
-msrv = "1.80"
-# Complexity thresholds (stricter for WASM due to size concerns)
+# Minimum Supported Rust Version (conservative for tooling)
+msrv = "1.84"
+# Complexity thresholds
 cognitive-complexity-threshold = 20
 too-many-arguments-threshold   = 6
 type-complexity-threshold      = 150
@@ -8,8 +8,8 @@ type-complexity-threshold      = 150
 avoid-breaking-exported-api = true
 # WASM-specific considerations
 missing-docs-in-crate-items = false
-# Additional lints useful for WASM
-disallowed-methods = [] # Add methods you want to avoid in WASM context
+# Additional lints useful
+disallowed-methods = [] # Add methods you want to avoid
 # Size thresholds
 pass-by-value-size-limit = 256
 trivial-copy-size-limit  = 64
