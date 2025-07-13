@@ -3,19 +3,17 @@
   name    = "auth-microservice"
   version = "0.1.0"
 
-  # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [[bin]]
   name = "auth"
-  path = "src/auth/main.rs"
+  path = "src/services/auth/main.rs"
 
 [[bin]]
   name = "client"
   path = "src/client/main.rs"
 
 [[bin]]
-  name = "health-check"
-  path = "src/health/main.rs"
+  name = "health"
+  path = "src/services/health/main.rs"
 
 [dependencies]
   clap      = { version = "4", features = ["derive"] }
