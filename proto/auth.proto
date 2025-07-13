@@ -2,29 +2,28 @@ syntax = "proto3";
 package auth;
 
 service Auth {
-  rpc SignUp(SignUpRequest) returns (SignUpResponse);
-  rpc SignIn(SignInRequest) returns (SignInResponse);
-  rpc SignOut(SignOutRequest) returns (SignOutResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
 }
 
-message SignUpResponse { StatusCode status_code = 1; }
-message SignUpRequest {
+message RegisterRequest {
   string username = 1;
   string password = 2;
 }
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+message LogoutRequest { string session_token = 1; }
 
-message SignInResponse {
+message RegisterResponse { StatusCode status_code = 1; }
+message LoginResponse {
   StatusCode status_code = 1;
   string user_id = 2;
   string session_token = 3;
 }
-message SignInRequest {
-  string username = 1;
-  string password = 2;
-}
-
-message SignOutResponse { StatusCode status_code = 1; }
-message SignOutRequest { string session_token = 1; }
+message LogoutResponse { StatusCode status_code = 1; }
 
 enum StatusCode {
   FAILURE = 0;
