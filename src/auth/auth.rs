@@ -1,14 +1,19 @@
 use std::sync::Mutex;
 
-use crate::{sessions::Sessions, users::Users};
-
-use tonic::{Request, Response, Status};
-
 use authentication::auth_server::Auth;
 use authentication::{
-    SignInRequest, SignInResponse, SignOutRequest, SignOutResponse, SignUpRequest, SignUpResponse,
+    SignInRequest,
+    SignInResponse,
+    SignOutRequest,
+    SignOutResponse,
+    SignUpRequest,
+    SignUpResponse,
     StatusCode,
 };
+use tonic::{Request, Response, Status};
+
+use crate::sessions::Sessions;
+use crate::users::Users;
 
 pub mod authentication {
     tonic::include_proto!("authentication");
@@ -19,7 +24,7 @@ pub use authentication::auth_server::AuthServer;
 pub use tonic::transport::Server;
 
 pub struct AuthService {
-    users_service: Box<Mutex<dyn Users + Send + Sync>>,
+    users_service:    Box<Mutex<dyn Users + Send + Sync>>,
     sessions_service: Box<Mutex<dyn Sessions + Send + Sync>>,
 }
 
@@ -28,10 +33,7 @@ impl AuthService {
         users_service: Box<Mutex<dyn Users + Send + Sync>>,
         sessions_service: Box<Mutex<dyn Sessions + Send + Sync>>,
     ) -> Self {
-        Self {
-            users_service,
-            sessions_service,
-        }
+        Self { users_service, sessions_service }
     }
 }
 
@@ -47,8 +49,9 @@ impl Auth for AuthService {
 
         let result: Option<String> = todo!(); // Get user's uuid from `users_service`. Panic if the lock is poisoned.
 
-        // Match on `result`. If `result` is `None` return a SignInResponse with a the `status_code` set to `Failure`
-        // and `user_uuid`/`session_token` set to empty strings.
+        // Match on `result`. If `result` is `None` return a SignInResponse with a the
+        // `status_code` set to `Failure` and `user_uuid`/`session_token` set to
+        // empty strings.
         let user_uuid: String = todo!();
 
         let session_token: String = todo!(); // Create new session using `sessions_service`. Panic if the lock is poisoned.
@@ -68,14 +71,15 @@ impl Auth for AuthService {
 
         let result: Result<(), String> = todo!(); // Create a new user through `users_service`. Panic if the lock is poisoned.
 
-        // TODO: Return a `SignUpResponse` with the appropriate `status_code` based on `result`.
+        // TODO: Return a `SignUpResponse` with the appropriate `status_code` based on
+        // `result`.
         match result {
             Ok(_) => {
                 todo!()
-            }
+            },
             Err(_) => {
                 todo!()
-            }
+            },
         }
     }
 
@@ -97,9 +101,9 @@ impl Auth for AuthService {
 
 #[cfg(test)]
 mod tests {
-    use crate::{users::UsersImpl, sessions::SessionsImpl};
-
     use super::*;
+    use crate::sessions::SessionsImpl;
+    use crate::users::UsersImpl;
 
     #[tokio::test]
     async fn sign_in_should_fail_if_user_not_found() {
@@ -211,9 +215,7 @@ mod tests {
 
         let auth_service = AuthService::new(users_service, sessions_service);
 
-        let request = tonic::Request::new(SignOutRequest {
-            session_token: "".to_owned()
-        });
+        let request = tonic::Request::new(SignOutRequest { session_token: "".to_owned() });
 
         let result = auth_service.sign_out(request).await.unwrap();
 

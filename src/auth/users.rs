@@ -1,66 +1,64 @@
-use pbkdf2::{
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Pbkdf2,
-};
-use rand_core::OsRng;
-use uuid::Uuid;
-
 use std::collections::HashMap;
+
+use pbkdf2::Pbkdf2;
+use pbkdf2::password_hash::rand_core::OsRng;
+use pbkdf2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
+
+use crate::uuids::UserId;
 
 pub trait Users {
     fn create_user(&mut self, username: String, password: String) -> Result<(), String>;
-    fn get_user_uuid(&self, username: String, password: String) -> Option<String>;
-    fn delete_user(&mut self, user_uuid: String);
+    fn get_user_uuid(&self, username: String, password: String) -> Option<UserId>;
+    fn delete_user(&mut self, user_uuid: UserId);
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct User {
-    user_uuid: String,
+    uuid:     UserId,
     username: String,
     password: String,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct UsersImpl {
-    uuid_to_user: HashMap<String, User>,
+    uuid_to_user:     HashMap<UserId, User>,
     username_to_user: HashMap<String, User>,
 }
 
 impl Users for UsersImpl {
     fn create_user(&mut self, username: String, password: String) -> Result<(), String> {
-        // TODO: Check if username already exist. If so return an error.
+        if self.username_to_user.contains_key(&username) {
+            return Err(format!("Username '{username}' already exists"));
+        }
 
         let salt = SaltString::generate(&mut OsRng);
-
-        let hashed_password = Pbkdf2
+        let password = Pbkdf2
             .hash_password(password.as_bytes(), &salt)
             .map_err(|e| format!("Failed to hash password.\n{e:?}"))?
             .to_string();
 
-        let user: User = todo!(); // Create new user with unique uuid and hashed password.
+        let id = UserId::new();
+        let user = User { uuid: id, username: username.clone(), password };
 
-        // TODO: Add user to `username_to_user` and `uuid_to_user`.
+        self.uuid_to_user.insert(id, user.clone());
+        self.username_to_user.insert(username, user);
 
         Ok(())
     }
 
-    fn get_user_uuid(&self, username: String, password: String) -> Option<String> {
-        let user: &User = todo!(); // Retrieve `User` or return `None` is user can't be found.
+    fn get_user_uuid(&self, username: String, password: String) -> Option<UserId> {
+        let user = self.username_to_user.get(&username)?;
 
-        // Get user's password as `PasswordHash` instance. 
-        let hashed_password = user.password.clone();
-        let parsed_hash = PasswordHash::new(&hashed_password).ok()?;
+        let parsed_hash = PasswordHash::new(&user.password).ok()?;
 
-        // Verify passed in password matches user's password.
-        let result = Pbkdf2.verify_password(password.as_bytes(), &parsed_hash);
+        Pbkdf2.verify_password(password.as_bytes(), &parsed_hash).ok()?;
 
-        // TODO: If the username and password passed in matches the user's username and password return the user's uuid.
-
-        None
+        (username == user.username).then(|| user.uuid)
     }
 
-    fn delete_user(&mut self, user_uuid: String) {
-        // TODO: Remove user from `username_to_user` and `uuid_to_user`.
+    fn delete_user(&mut self, user_uuid: UserId) {
+        self.username_to_user.retain(|_username, user| user.uuid != user_uuid);
+        self.uuid_to_user.remove(&user_uuid);
     }
 }
 
@@ -98,9 +96,9 @@ mod tests {
             .create_user("username".to_owned(), "password".to_owned())
             .expect("should create user");
 
-        assert!(user_service
-            .get_user_uuid("username".to_owned(), "password".to_owned())
-            .is_some());
+        assert!(
+            user_service.get_user_uuid("username".to_owned(), "password".to_owned()).is_some()
+        );
     }
 
     #[test]
@@ -110,9 +108,11 @@ mod tests {
             .create_user("username".to_owned(), "password".to_owned())
             .expect("should create user");
 
-        assert!(user_service
-            .get_user_uuid("username".to_owned(), "incorrect password".to_owned())
-            .is_none());
+        assert!(
+            user_service
+                .get_user_uuid("username".to_owned(), "incorrect password".to_owned())
+                .is_none()
+        );
     }
 
     #[test]
@@ -122,9 +122,8 @@ mod tests {
             .create_user("username".to_owned(), "password".to_owned())
             .expect("should create user");
 
-        let user_uuid = user_service
-            .get_user_uuid("username".to_owned(), "password".to_owned())
-            .unwrap();
+        let user_uuid =
+            user_service.get_user_uuid("username".to_owned(), "password".to_owned()).unwrap();
 
         user_service.delete_user(user_uuid);
 
