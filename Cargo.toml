@@ -1,11 +1,11 @@
 [package]
   edition = "2024"
-  name    = "auth-microservice"
+  name    = "microserve"
   version = "0.1.0"
 
 [[bin]]
   name = "auth"
-  path = "src/services/auth/main.rs"
+  path = "src/auth/main.rs"
 
 [[bin]]
   name = "client"
@@ -13,16 +13,16 @@
 
 [[bin]]
   name = "health"
-  path = "src/services/health/main.rs"
+  path = "src/health/main.rs"
 
 [dependencies]
   clap      = { version = "4", features = ["derive"] }
   pbkdf2    = { version = "0.12", features = ["simple"] }
   prost     = "0.14"
-  rand_core = { version = "0.9", features = ["std"] }
+  rand_core = { version = "0.6", features = ["std"] }
   tokio     = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
   tonic     = "0.13"
-  uuid      = { version = "1", features = ["v4"] }
+  uuid      = { version = "1", features = ["v7"] }
 
 [build-dependencies]
   tonic-build = "0.13"
