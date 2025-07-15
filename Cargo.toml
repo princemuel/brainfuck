@@ -18,11 +18,11 @@
 [dependencies]
   clap      = { version = "4", features = ["derive"] }
   pbkdf2    = { version = "0.12", features = ["simple"] }
-  prost     = "0.14"
+  prost     = "0.13"
   rand_core = { version = "0.6", features = ["std"] }
   tokio     = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
   tonic     = "0.13"
   uuid      = { version = "1", features = ["v7"] }
 
 [build-dependencies]
-  tonic-build = "0.13"
+  tonic-build = { version = "0.13", features = ["prost"] }
