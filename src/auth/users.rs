@@ -7,8 +7,8 @@ use pbkdf2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, Salt
 use crate::uuids::UserId;
 
 pub trait Users {
-    fn create_user(&mut self, username: String, password: String) -> Result<(), String>;
-    fn get_user_uuid(&self, username: String, password: String) -> Option<UserId>;
+    fn create_user(&mut self, username: &str, password: &str) -> Result<(), String>;
+    fn get_user_uuid(&self, username: &str, password: &str) -> Option<UserId>;
     fn delete_user(&mut self, user_uuid: UserId);
 }
 
@@ -26,8 +26,8 @@ pub struct UsersImpl {
 }
 
 impl Users for UsersImpl {
-    fn create_user(&mut self, username: String, password: String) -> Result<(), String> {
-        if self.username_to_user.contains_key(&username) {
+    fn create_user(&mut self, username: &str, password: &str) -> Result<(), String> {
+        if self.username_to_user.contains_key(username) {
             return Err(format!("Username '{username}' already exists"));
         }
 
@@ -38,27 +38,29 @@ impl Users for UsersImpl {
             .to_string();
 
         let id = UserId::new();
-        let user = User { uuid: id, username: username.clone(), password };
+        let user = User { uuid: id, username: username.to_string(), password };
 
         self.uuid_to_user.insert(id, user.clone());
-        self.username_to_user.insert(username, user);
+        self.username_to_user.insert(username.to_owned(), user);
 
         Ok(())
     }
 
-    fn get_user_uuid(&self, username: String, password: String) -> Option<UserId> {
-        let user = self.username_to_user.get(&username)?;
+    fn get_user_uuid(&self, username: &str, password: &str) -> Option<UserId> {
+        let user = self.username_to_user.get(username)?;
 
         let parsed_hash = PasswordHash::new(&user.password).ok()?;
 
         Pbkdf2.verify_password(password.as_bytes(), &parsed_hash).ok()?;
 
-        (username == user.username).then(|| user.uuid)
+        (username == user.username).then_some(user.uuid)
     }
 
     fn delete_user(&mut self, user_uuid: UserId) {
-        self.username_to_user.retain(|_username, user| user.uuid != user_uuid);
-        self.uuid_to_user.remove(&user_uuid);
+        if let Some(user) = self.uuid_to_user.get(&user_uuid) {
+            self.username_to_user.remove(&user.username);
+            self.uuid_to_user.remove(&user_uuid);
+        }
     }
 }
 
@@ -69,9 +71,7 @@ mod tests {
     #[test]
     fn should_create_user() {
         let mut user_service = UsersImpl::default();
-        user_service
-            .create_user("username".to_owned(), "password".to_owned())
-            .expect("should create user");
+        user_service.create_user("username", "password").expect("should create user");
 
         assert_eq!(user_service.uuid_to_user.len(), 1);
         assert_eq!(user_service.username_to_user.len(), 1);
@@ -80,11 +80,9 @@ mod tests {
     #[test]
     fn should_fail_creating_user_with_existing_username() {
         let mut user_service = UsersImpl::default();
-        user_service
-            .create_user("username".to_owned(), "password".to_owned())
-            .expect("should create user");
+        user_service.create_user("username", "password").expect("should create user");
 
-        let result = user_service.create_user("username".to_owned(), "password".to_owned());
+        let result = user_service.create_user("username", "password");
 
         assert!(result.is_err());
     }
@@ -92,38 +90,25 @@ mod tests {
     #[test]
     fn should_retrieve_user_uuid() {
         let mut user_service = UsersImpl::default();
-        user_service
-            .create_user("username".to_owned(), "password".to_owned())
-            .expect("should create user");
+        user_service.create_user("username", "password").expect("should create user");
 
-        assert!(
-            user_service.get_user_uuid("username".to_owned(), "password".to_owned()).is_some()
-        );
+        assert!(user_service.get_user_uuid("username", "password").is_some());
     }
 
     #[test]
     fn should_fail_to_retrieve_user_uuid_with_incorrect_password() {
         let mut user_service = UsersImpl::default();
-        user_service
-            .create_user("username".to_owned(), "password".to_owned())
-            .expect("should create user");
+        user_service.create_user("username", "password").expect("should create user");
 
-        assert!(
-            user_service
-                .get_user_uuid("username".to_owned(), "incorrect password".to_owned())
-                .is_none()
-        );
+        assert!(user_service.get_user_uuid("username", "incorrect password").is_none());
     }
 
     #[test]
     fn should_delete_user() {
         let mut user_service = UsersImpl::default();
-        user_service
-            .create_user("username".to_owned(), "password".to_owned())
-            .expect("should create user");
+        user_service.create_user("username", "password").expect("should create user");
 
-        let user_uuid =
-            user_service.get_user_uuid("username".to_owned(), "password".to_owned()).unwrap();
+        let user_uuid = user_service.get_user_uuid("username", "password").unwrap();
 
         user_service.delete_user(user_uuid);
 

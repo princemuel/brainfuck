@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
-use authentication::auth_server::Auth;
-use authentication::{
+use oauth::auth_server::Auth;
+use oauth::{
     SignInRequest,
     SignInResponse,
     SignOutRequest,
@@ -15,12 +15,12 @@ use tonic::{Request, Response, Status};
 use crate::sessions::Sessions;
 use crate::users::Users;
 
-pub mod authentication {
-    tonic::include_proto!("authentication");
+pub mod oauth {
+    tonic::include_proto!("oauth");
 }
 
 // Re-exporting
-pub use authentication::auth_server::AuthServer;
+pub use oauth::auth_server::AuthServer;
 pub use tonic::transport::Server;
 
 pub struct AuthService {
@@ -45,20 +45,40 @@ impl Auth for AuthService {
     ) -> Result<Response<SignInResponse>, Status> {
         println!("Got a request: {:?}", request);
 
-        let req = request.into_inner();
+        let request = request.into_inner();
 
-        let result: Option<String> = todo!(); // Get user's uuid from `users_service`. Panic if the lock is poisoned.
+        let result = self
+            .users_service
+            .lock()
+            .expect("lock should not be poisoned")
+            .get_user_uuid(&request.username, &request.password);
 
-        // Match on `result`. If `result` is `None` return a SignInResponse with a the
-        // `status_code` set to `Failure` and `user_uuid`/`session_token` set to
-        // empty strings.
-        let user_uuid: String = todo!();
+        let user_uuid = match result {
+            Some(uuid) => uuid,
+            None => {
+                let response = SignInResponse {
+                    user_id:       "".to_string(),
+                    session_token: "".to_owned(),
+                    status_code:   StatusCode::Failure.into(),
+                };
 
-        let session_token: String = todo!(); // Create new session using `sessions_service`. Panic if the lock is poisoned.
+                return Ok(Response::new(response));
+            },
+        };
 
-        let reply: SignInResponse = todo!(); // Create a `SignInResponse` with `status_code` set to `Success`
+        let session_token = self
+            .sessions_service
+            .lock()
+            .expect("lock should not be poisoned")
+            .create_session(user_uuid);
 
-        Ok(Response::new(reply))
+        let response = SignInResponse {
+            user_id:       user_uuid.to_string(),
+            session_token: session_token.to_string(),
+            status_code:   StatusCode::Success.into(),
+        };
+
+        Ok(Response::new(response))
     }
 
     async fn sign_up(
@@ -67,20 +87,24 @@ impl Auth for AuthService {
     ) -> Result<Response<SignUpResponse>, Status> {
         println!("Got a request: {:?}", request);
 
-        let req = request.into_inner();
+        let request = request.into_inner();
 
-        let result: Result<(), String> = todo!(); // Create a new user through `users_service`. Panic if the lock is poisoned.
+        let result = self
+            .users_service
+            .lock()
+            .expect("lock should not be poisoned")
+            .create_user(&request.username, &request.password);
 
-        // TODO: Return a `SignUpResponse` with the appropriate `status_code` based on
-        // `result`.
         match result {
             Ok(_) => {
-                todo!()
+                let response = SignUpResponse { status_code: StatusCode::Success.into() };
+                return Ok(Response::new(response));
             },
             Err(_) => {
-                todo!()
+                let response = SignUpResponse { status_code: StatusCode::Failure.into() };
+                return Ok(Response::new(response));
             },
-        }
+        };
     }
 
     async fn sign_out(
@@ -89,13 +113,22 @@ impl Auth for AuthService {
     ) -> Result<Response<SignOutResponse>, Status> {
         println!("Got a request: {:?}", request);
 
-        let req = request.into_inner();
+        let request = request.into_inner();
 
-        // TODO: Delete session using `sessions_service`.
+        let status_code = match request.session_token.try_into() {
+            Ok(token) => {
+                self.sessions_service
+                    .lock()
+                    .expect("lock should not be poisoned")
+                    .delete_session(token);
+                StatusCode::Success.into()
+            },
+            Err(_) => StatusCode::Failure.into(),
+        };
 
-        let reply: SignOutResponse = todo!(); // Create `SignOutResponse` with `status_code` set to `Success`
+        let response = SignOutResponse { status_code };
 
-        Ok(Response::new(reply))
+        Ok(Response::new(response))
     }
 }
 
@@ -120,15 +153,14 @@ mod tests {
         let result = auth_service.sign_in(request).await.unwrap().into_inner();
 
         assert_eq!(result.status_code, StatusCode::Failure.into());
-        assert_eq!(result.user_uuid.is_empty(), true);
-        assert_eq!(result.session_token.is_empty(), true);
+        assert!(result.user_id.is_empty());
+        assert!(result.session_token.is_empty());
     }
 
     #[tokio::test]
     async fn sign_in_should_fail_if_incorrect_password() {
         let mut users_service = UsersImpl::default();
-
-        let _ = users_service.create_user("123456".to_owned(), "654321".to_owned());
+        let _ = users_service.create_user("123456", "654321");
 
         let users_service = Box::new(Mutex::new(users_service));
         let sessions_service = Box::new(Mutex::new(SessionsImpl::default()));
@@ -143,15 +175,14 @@ mod tests {
         let result = auth_service.sign_in(request).await.unwrap().into_inner();
 
         assert_eq!(result.status_code, StatusCode::Failure.into());
-        assert_eq!(result.user_uuid.is_empty(), true);
-        assert_eq!(result.session_token.is_empty(), true);
+        assert!(result.user_id.is_empty());
+        assert!(result.session_token.is_empty());
     }
 
     #[tokio::test]
     async fn sign_in_should_succeed() {
         let mut users_service = UsersImpl::default();
-
-        let _ = users_service.create_user("123456".to_owned(), "654321".to_owned());
+        let _ = users_service.create_user("123456", "654321");
 
         let users_service = Box::new(Mutex::new(users_service));
         let sessions_service = Box::new(Mutex::new(SessionsImpl::default()));
@@ -166,15 +197,14 @@ mod tests {
         let result = auth_service.sign_in(request).await.unwrap().into_inner();
 
         assert_eq!(result.status_code, StatusCode::Success.into());
-        assert_eq!(result.user_uuid.is_empty(), false);
-        assert_eq!(result.session_token.is_empty(), false);
+        assert!(!result.user_id.is_empty());
+        assert!(!result.session_token.is_empty());
     }
 
     #[tokio::test]
     async fn sign_up_should_fail_if_username_exists() {
         let mut users_service = UsersImpl::default();
-
-        let _ = users_service.create_user("123456".to_owned(), "654321".to_owned());
+        let _ = users_service.create_user("123456", "654321");
 
         let users_service = Box::new(Mutex::new(users_service));
         let sessions_service = Box::new(Mutex::new(SessionsImpl::default()));
@@ -209,7 +239,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn sign_out_should_succeed() {
+    async fn sign_out_should_fail_if_incorrect_token() {
         let users_service = Box::new(Mutex::new(UsersImpl::default()));
         let sessions_service = Box::new(Mutex::new(SessionsImpl::default()));
 
@@ -217,6 +247,29 @@ mod tests {
 
         let request = tonic::Request::new(SignOutRequest { session_token: "".to_owned() });
 
+        let result = auth_service.sign_out(request).await.unwrap();
+
+        assert_eq!(result.into_inner().status_code, StatusCode::Failure.into());
+    }
+
+    #[tokio::test]
+    async fn sign_out_should_succeed() {
+        let mut users_service = UsersImpl::default();
+        let _ = users_service.create_user("123456", "654321");
+
+        let users_service = Box::new(Mutex::new(users_service));
+        let sessions_service = Box::new(Mutex::new(SessionsImpl::default()));
+
+        let auth_service = AuthService::new(users_service, sessions_service);
+
+        let request = tonic::Request::new(SignInRequest {
+            username: "123456".to_owned(),
+            password: "654321".to_owned(),
+        });
+        let result = auth_service.sign_in(request).await.unwrap().into_inner();
+
+        let request =
+            tonic::Request::new(SignOutRequest { session_token: result.session_token });
         let result = auth_service.sign_out(request).await.unwrap();
 
         assert_eq!(result.into_inner().status_code, StatusCode::Success.into());

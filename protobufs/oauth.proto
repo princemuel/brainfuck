@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package authentication;
+package oauth;
 
 service Auth {
   rpc SignUp(SignUpRequest) returns (SignUpResponse);

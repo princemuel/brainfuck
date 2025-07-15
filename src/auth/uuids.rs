@@ -1,6 +1,7 @@
 use std::fmt::{self, Display};
 use std::marker::PhantomData;
 use std::ops::Deref;
+use std::str::FromStr;
 
 use uuid::Uuid;
 
@@ -48,6 +49,24 @@ impl<T> From<TypedUuid<T>> for Uuid {
     fn from(wrapper: TypedUuid<T>) -> Self { wrapper.0 }
 }
 
+impl<T> TryFrom<String> for TypedUuid<T> {
+    type Error = uuid::Error;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        let uuid = Uuid::parse_str(&s)?;
+        Ok(Self(uuid, PhantomData))
+    }
+}
+
+impl<T> FromStr for TypedUuid<T> {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let uuid = Uuid::parse_str(s)?;
+        Ok(Self(uuid, PhantomData))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -75,7 +94,7 @@ mod tests {
         let user_id = UserId::new();
 
         // Display trait works
-        println!("User ID: {}", user_id);
+        println!("User ID: {user_id}");
 
         // String conversion works
         let id_string = user_id.to_string();
