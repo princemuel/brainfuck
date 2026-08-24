@@ -1,28 +1,114 @@
 [package]
-  edition = "2024"
-  name    = "microserve"
-  version = "0.1.0"
-
-[[bin]]
-  name = "auth"
-  path = "src/auth/main.rs"
-
-[[bin]]
-  name = "client"
-  path = "src/client/main.rs"
-
-[[bin]]
-  name = "health"
-  path = "src/health/main.rs"
+name    = "brainfuck"
+version = "0.1.0"
+edition = "2024"
 
 [dependencies]
-  clap      = { version = "4", features = ["derive"] }
-  pbkdf2    = { version = "0.12", features = ["simple"] }
-  prost     = "0.13"
-  rand_core = { version = "0.6", features = ["std"] }
-  tokio     = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
-  tonic     = "0.13"
-  uuid      = { version = "1", features = ["v7"] }
+eros    = "0.7"
+inkwell = { version = "0.10", features = ["llvm22-1"] }
+lexopt  = "0.3"
+libc    = "0.2"
 
-[build-dependencies]
-  tonic-build = { version = "0.13", features = ["prost"] }
+[lints.clippy]
+all         = { level = "warn", priority = -1 }
+pedantic    = { level = "warn", priority = -1 }
+restriction = { level = "warn", priority = -1 }
+
+# --- Allowed (too noisy / not applicable) ---
+arbitrary_source_item_ordering = "allow"
+default_numeric_fallback       = "allow"
+exhaustive_structs             = "allow"
+expect_used                    = "allow"
+implicit_return                = "allow"  # redundant
+inline_modules                 = "allow"
+let_underscore_untyped         = "allow"
+min_ident_chars                = "allow"
+missing_docs_in_private_items  = "allow"  # uncomment if it gets annoying
+missing_errors_doc             = "allow"
+missing_panics_doc             = "allow"
+missing_trait_methods          = "allow"
+module_name_repetitions        = "allow"
+print_stderr                   = "allow"
+print_stdout                   = "allow"
+pub_with_shorthand             = "allow"  # redundant
+question_mark_used             = "allow"
+self_named_module_files        = "allow"
+shadow_reuse                   = "allow"
+shadow_unrelated               = "allow"
+single_call_fn                 = "allow"
+single_char_lifetime_names     = "allow"
+unseparated_literal_suffix     = "allow"
+
+# module_name_repetitions    = "allow"  # uncomment if it gets annoying
+# panic                      = "allow"  # uncomment if you use panic! intentionally
+# std_instead_of_alloc       = "allow"  # uncomment if you add alloc later
+# implicit_return            = "allow"  # restriction lint, very noisy in Rust style
+
+# --- Escalate the ones you care most about ---
+default_union_representation   = "deny"
+empty_drop                     = "deny"
+missing_asserts_for_indexing   = "deny"
+mixed_read_write_in_expression = "deny"
+panic_in_result_fn             = "deny"
+
+[lints.rust]
+# --- Lint groups ---
+future_incompatible                        = { level = "warn", priority = -1 }
+nonstandard_style                          = { level = "warn", priority = -1 }
+rust_2018_idioms                           = { level = "warn", priority = -1 }
+unknown_or_malformed_diagnostic_attributes = { level = "warn", priority = -1 }
+unused                                     = { level = "warn", priority = -1 }
+
+# --- Undefined / unsafe behaviour ---
+ffi_unwind_calls       = "deny"  # C function unwinds into Rust = instant UB
+keyword_idents_2024    = "deny"
+non_ascii_idents       = "deny"  # homoglyph attacks (Cyrillic 'а' vs ASCII 'a')
+unsafe_op_in_unsafe_fn = "deny"  # forces explicit unsafe {} blocks inside unsafe fn
+
+# --- API / interface correctness ---
+macro_use_extern_crate       = "deny"  # use explicit `use crate::macro` instead
+meta_variable_misuse         = "deny"  # malformed macro_rules! metavariables
+missing_copy_implementations = "warn"  # reminder to derive Copy where trivially safe
+# missing_docs               = "warn"  # uncomment when the project matures
+redundant_imports            = "deny"
+unnameable_types             = "warn"
+unreachable_pub              = "warn"
+
+# --- Type system / lifetime hygiene ---
+ambiguous_negative_literals   = "warn"  # -1i32.abs() is parsed as -(1i32.abs()), not (-1i32).abs()
+deref_into_dyn_supertrait     = "warn"  # &dyn Sub deref'd to &dyn Super. subtle dispatch change
+impl_trait_redundant_captures = "warn"
+redundant_lifetimes           = "deny"
+single_use_lifetimes          = "deny"
+trivial_casts                 = "deny"
+trivial_numeric_casts         = "deny"
+unit_bindings                 = "deny"
+unused_import_braces          = "deny"
+unused_lifetimes              = "warn"
+unused_qualifications         = "deny"
+unused_results                = "warn"
+
+# --- Drop / resource safety ---
+let_underscore_drop = "warn"
+
+# --- Style / future compatibility ---
+closure_returning_async_block = "warn"
+keyword_idents_2018           = "warn"
+
+# --- Uncomment when ready ---
+# missing-docs              = "warn"   # enable once public API stabilises
+# unsafe-code               = "warn"   # enable/disable per project
+# unused-crate-dependencies = "warn"   # enable per-crate, noisy with dev-dependencies
+
+[profile.bench]
+opt-level     = 3
+debug         = false
+lto           = true
+codegen-units = 1
+
+[profile.release]
+opt-level     = 3
+strip         = "symbols"
+lto           = true
+panic         = "abort"
+codegen-units = 1
