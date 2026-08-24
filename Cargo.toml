@@ -15,29 +15,31 @@ pedantic    = { level = "warn", priority = -1 }
 restriction = { level = "warn", priority = -1 }
 
 # --- Allowed (too noisy / not applicable) ---
-arbitrary_source_item_ordering = "allow"
-default_numeric_fallback       = "allow"
-exhaustive_structs             = "allow"
-expect_used                    = "allow"
-implicit_return                = "allow"  # redundant
-inline_modules                 = "allow"
-let_underscore_untyped         = "allow"
-min_ident_chars                = "allow"
-missing_docs_in_private_items  = "allow"  # uncomment if it gets annoying
-missing_errors_doc             = "allow"
-missing_panics_doc             = "allow"
-missing_trait_methods          = "allow"
-module_name_repetitions        = "allow"
-print_stderr                   = "allow"
-print_stdout                   = "allow"
-pub_with_shorthand             = "allow"  # redundant
-question_mark_used             = "allow"
-self_named_module_files        = "allow"
-shadow_reuse                   = "allow"
-shadow_unrelated               = "allow"
-single_call_fn                 = "allow"
-single_char_lifetime_names     = "allow"
-unseparated_literal_suffix     = "allow"
+arbitrary_source_item_ordering     = "allow"
+arithmetic_side_effects            = "allow"
+default_numeric_fallback           = "allow"
+doc_paragraphs_missing_punctuation = "allow"
+exhaustive_structs                 = "allow"
+expect_used                        = "allow"
+implicit_return                    = "allow"  # redundant
+inline_modules                     = "allow"
+min_ident_chars                    = "allow"
+missing_docs_in_private_items      = "allow"  # uncomment if it gets annoying
+missing_errors_doc                 = "allow"
+missing_inline_in_public_items     = "allow"
+missing_panics_doc                 = "allow"
+missing_trait_methods              = "allow"
+module_name_repetitions            = "allow"
+print_stderr                       = "allow"
+print_stdout                       = "allow"
+pub_with_shorthand                 = "allow"  # redundant
+question_mark_used                 = "allow"
+self_named_module_files            = "allow"
+shadow_reuse                       = "allow"
+shadow_unrelated                   = "allow"
+single_call_fn                     = "allow"
+single_char_lifetime_names         = "allow"
+unseparated_literal_suffix         = "allow"
 
 # module_name_repetitions    = "allow"  # uncomment if it gets annoying
 # panic                      = "allow"  # uncomment if you use panic! intentionally
