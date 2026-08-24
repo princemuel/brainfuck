@@ -1,0 +1,73 @@
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        // Rust Analyzer settings
+        "rustc": { "source": "discover" },
+        "assist": { "preferSelf": true, "emitMustUse": true },
+        "cargo": { "features": "all", "targetDir": true },
+        "check": { "command": "clippy" },
+        "checkOnSave": true,
+        "imports": {
+          "granularity": { "enforce": true, "group": "module" },
+          "merge": { "glob": true },
+          "preferNoStd": true,
+          "preferPrelude": true
+        },
+        "inlayHints": { "typeHints": { "enable": true }, "chainingHints": { "enable": true } },
+        "rustfmt": { "extraArgs": ["+nightly"] },
+        "semanticHighlighting": {
+          "doc": { "comment": { "inject": { "enable": true } } },
+          "punctuation": { "enable": true, "specialization": { "enable": true } }
+        },
+        "completion": {
+          "autoimport": { "enable": true },
+          "snippets": {
+            "custom": {
+              "Some": {
+                "postfix": "some",
+                "body": ["Some(${receiver})"],
+                "scope": "expr"
+              },
+              "Ok": {
+                "postfix": "ok",
+                "body": ["Ok(${receiver})"],
+                "scope": "expr"
+              },
+              "Arc::new": {
+                "postfix": "arc",
+                "body": ["Arc::new(${receiver})"],
+                "requires": "std::sync::Arc",
+                "scope": "expr"
+              },
+              "Rc::new": {
+                "postfix": "rc",
+                "body": ["Rc::new(${receiver})"],
+                "requires": "std::rc::Rc",
+                "scope": "expr"
+              },
+              "Cell::new": {
+                "postfix": "cell",
+                "body": ["Cell::new(${receiver})"],
+                "requires": "std::cell::Cell",
+                "scope": "expr"
+              },
+              "Box::pin": {
+                "postfix": "boxpin",
+                "body": ["Box::pin(${receiver})"],
+                "requires": "std::boxed::Box",
+                "scope": "expr"
+              },
+              "vec!": {
+                "postfix": "vec",
+                "body": ["vec![${receiver}]"],
+                "description": "vec![]",
+                "scope": "expr"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
