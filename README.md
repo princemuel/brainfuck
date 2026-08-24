@@ -1,10 +1,12 @@
 # Brainfuck
 
+An experimental Brainfuck compiler that generates native executables using the LLVM compiler framework.
+
+## Language overview
+
 The Brainfuck programming language is a _Turing-complete language_ created by Urban Müller.
 The language only consists of 8 operators, yet with the 8 operators, `<>+-[],.`
 you are capable of writing almost any program you can think of.
-
-## Language overview
 
 The idea behind `brainfuck` is memory manipulation. Basically, you are given
 an array of 30,000 1byte memory blocks. The array size is actually dependent upon
@@ -78,6 +80,7 @@ sudo dnf update --refresh
 ```sh
 sudo dnf install llvm-devel clang-devel lld lldb clang-tools-extra
 ```
+
 Verify the installation was a success:
 
 ```sh
