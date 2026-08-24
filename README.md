@@ -50,23 +50,35 @@ increase the value at the memory pointer, etc.
 **Arch Linux:**
 
 ```sh
-sudo pacman -S llvm
+udo pacman -Syu llvm clang lld lldb
 ```
 
 **macOS (Homebrew):**
 
 ```sh
 brew install llvm@22
+```
+
+```sh
 export PATH="$(brew --prefix llvm@22)/bin:$PATH"
 ```
 
 **Ubuntu / Debian:**
 
 ```sh
-wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 22
+wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 22 all
 ```
 
-Verify:
+**Fedora/CentOS:**
+
+```sh
+sudo dnf update --refresh
+```
+
+```sh
+sudo dnf install llvm-devel clang-devel lld lldb clang-tools-extra
+```
+Verify the installation was a success:
 
 ```sh
 llvm-config --version   # should print 22.x.x
@@ -102,17 +114,6 @@ cargo test --lib -- codegen::tests
 # With stdout captured
 cargo test -- --nocapture
 ```
-
-The test suite covers:
-
-- **Lexer**. Every token kind, span correctness, iterator fusing, clone
-  independence, comment filtering, dot-led floats, number boundary cases
-- **Parser**. Every parse method, all error variants, Pratt precedence
-  and associativity, multi-dispatch (semicolon-separated statements),
-  error recovery
-- **Codegen**. Constant folding, all binary operators, symbol table
-  scoping, extern→def resolution (the tutorial bug fix), redefinition
-  rejection, failed-body cleanup
 
 ## License
 
