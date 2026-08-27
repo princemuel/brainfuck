@@ -35,9 +35,7 @@ increase the value at the memory pointer, etc.
   of the program. And the memory pointer starts out on the very left-most
   memory block.
 
-- Loops may be nested as many times as you want. But all `[`
-  must have a corre-
-  sponding `]`.
+- Loops may be nested as many times as you want. But all `[` must have a corresponding `]`.
 
 ## Working Locally
 
@@ -52,7 +50,7 @@ increase the value at the memory pointer, etc.
 **Arch Linux:**
 
 ```sh
-udo pacman -Syu llvm clang lld lldb
+sudo pacman -Syu llvm clang lld lldb
 ```
 
 **macOS (Homebrew):**

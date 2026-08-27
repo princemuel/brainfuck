@@ -6,6 +6,6 @@
     // sourceLanguages is required for CodeLLDB (not GDB) when using Rust
     "sourceLanguages": ["rust"],
     "request": "launch",
-    "adapter": "CodeLLDB",
-  },
+    "adapter": "CodeLLDB"
+  }
 ]

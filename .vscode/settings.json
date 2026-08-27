@@ -59,5 +59,8 @@
     "**/mod.rs": "${dirname}.rs"
   },
 
-  "merge-conflict.autoNavigateNextConflict.enabled": true
+  "merge-conflict.autoNavigateNextConflict.enabled": true,
+  "[brainfuck]": {
+    "editor.defaultFormatter": "Ponderance.brainfuck-vscode"
+  }
 }
