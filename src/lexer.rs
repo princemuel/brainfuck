@@ -1,22 +1,7 @@
-use core::iter::Peekable;
-use core::str::Chars;
+use core::fmt;
 
-/// Brainfuck lexer that converts source code into an AST
-pub struct Lexer<'a> {
-    chars: Peekable<Chars<'a>>,
-    position: Position,
-}
-
-impl<'a> Lexer<'a> {
-    /// Create a new lexer from source code
-    #[must_use]
-    pub fn new(source: &'a str) -> Self {
-        Self { chars: source.chars().peekable(), position: Position::new() }
-    }
-}
-
-/// Represents a position in the source code for error reporting
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Represents a position in the source code for error reporting.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Position {
     pub row: usize,
     pub col: usize,
@@ -37,40 +22,16 @@ impl Position {
     }
 }
 
-impl Default for Position {
-    #[inline]
-    fn default() -> Self { Self::new() }
-}
-
-#[expect(clippy::exhaustive_enums, reason = "this is already specified")]
-/// Basic Brainfuck commands (excluding loop constructs).
+/// Represents a single Brainfuck token/command, tagged with the
+/// position at which it occurred.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Command {
-    Right,     // >
-    Left,      // <
-    Increment, // +
-    Decrement, // -
-    Output,    // .
-    Input,     // ,
+pub struct Spanned<T> {
+    pub token: T,
+    pub position: Position,
 }
 
-impl Command {
-    /// Parse a single command character
-    const fn parse(value: char) -> Option<Self> {
-        match value {
-            '>' => Some(Self::Right),
-            '<' => Some(Self::Left),
-            '+' => Some(Self::Increment),
-            '-' => Some(Self::Decrement),
-            '.' => Some(Self::Output),
-            ',' => Some(Self::Input),
-            _ => None,
-        }
-    }
-}
-
-#[expect(clippy::exhaustive_enums, reason = "this is already specified")]
-/// Represents a single Brainfuck token/command.
+/// A single Brainfuck command.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Token {
     /// Increment data pointer `>`.
@@ -89,36 +50,34 @@ pub enum Token {
     LoopStart,
     /// End of loop `]`.
     LoopEnd,
-    /// End of file/input.
-    Eof,
 }
 
-impl Token {
-    /// Convert a character to its corresponding Brainfuck token.
+impl TryFrom<char> for Token {
+    type Error = ();
+
+    /// Convert a character into its corresponding Brainfuck token.
     ///
-    /// Returns Some(Token) for valid Brainfuck commands, None for
-    /// comments/ignored characters.
+    /// Returns `Err(())` for comments/ignored characters.
     #[inline]
-    #[must_use]
-    pub const fn from_char(c: char) -> Option<Self> {
-        match c {
-            '>' => Some(Token::Right),
-            '<' => Some(Token::Left),
-            '+' => Some(Token::Increment),
-            '-' => Some(Token::Decrement),
-            '.' => Some(Token::Output),
-            ',' => Some(Token::Input),
-            '[' => Some(Token::LoopStart),
-            ']' => Some(Token::LoopEnd),
-            _ => None, // All other characters are ignored (comments)
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            '>' => Ok(Self::Right),
+            '<' => Ok(Self::Left),
+            '+' => Ok(Self::Increment),
+            '-' => Ok(Self::Decrement),
+            '.' => Ok(Self::Output),
+            ',' => Ok(Self::Input),
+            '[' => Ok(Self::LoopStart),
+            ']' => Ok(Self::LoopEnd),
+            _ => Err(()),
         }
     }
+}
 
-    /// Get the character representation of this token.
+impl From<Token> for char {
     #[inline]
-    #[must_use]
-    pub const fn as_char(&self) -> char {
-        match *self {
+    fn from(token: Token) -> Self {
+        match token {
             Token::Left => '<',
             Token::Right => '>',
             Token::Increment => '+',
@@ -127,22 +86,80 @@ impl Token {
             Token::Output => '.',
             Token::LoopStart => '[',
             Token::LoopEnd => ']',
-            Token::Eof => '\0',
         }
     }
 }
 
-impl core::fmt::Display for Token {
+impl fmt::Display for Token {
     #[inline]
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.as_char())
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "{}", char::from(*self)) }
+}
+
+/// Brainfuck lexer that turns source text into a stream of [`Spanned`] tokens.
+///
+/// Non-command characters (comments) are skipped transparently.
+pub struct Lexer<'a> {
+    chars: core::str::Chars<'a>,
+    position: Position,
+}
+
+impl<'a> Lexer<'a> {
+    /// Create a new lexer from source code.
+    #[must_use]
+    pub fn new(source: &'a str) -> Self {
+        Self { chars: source.chars(), position: Position::new() }
     }
 }
+
+impl Iterator for Lexer<'_> {
+    type Item = Spanned<Token>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let ch = self.chars.next()?;
+            let position = self.position;
+            self.position.advance(ch);
+
+            if let Ok(token) = Token::try_from(ch) {
+                return Some(Spanned { token, position });
+            }
+            // Not a command character; treat as a comment and continue.
+        }
+    }
+}
+
+impl core::iter::FusedIterator for Lexer<'_> {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_simple_commands() {}
+    fn scenario_parse_simple_commands() {
+        let expected: Vec<Token> = Lexer::new("+-><.,[]").map(|s| s.token).collect();
+        assert_eq!(expected, vec![
+            Token::Increment,
+            Token::Decrement,
+            Token::Right,
+            Token::Left,
+            Token::Output,
+            Token::Input,
+            Token::LoopStart,
+            Token::LoopEnd,
+        ]);
+    }
+
+    #[test]
+    fn scenario_skips_comments_and_tracks_position() {
+        let mut lexer = Lexer::new("+ hello\n-");
+        let expected = lexer.next().unwrap();
+        assert_eq!(expected.token, Token::Increment);
+        assert_eq!(expected.position, Position { row: 1, col: 1 });
+
+        let expected = lexer.next().unwrap();
+        assert_eq!(expected.token, Token::Decrement);
+        assert_eq!(expected.position, Position { row: 2, col: 1 });
+
+        assert!(lexer.next().is_none());
+    }
 }
